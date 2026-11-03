@@ -18,7 +18,7 @@ Simulated tickers: `AAPL`, `GOOGL`, `MSFT`, `AMZN`, `NVDA`.
 This follows the standard CrewAI project layout (what `crewai create crew` generates):
 
 ```
-crew_ai/
+crewai_ex/
   main.py              # Entry point: env + logging setup, inputs, kickoff()
   crew.py              # @CrewBase class FinanceCrew: wires agents, tasks, tools
   config/
@@ -43,7 +43,7 @@ From the `tool_use` project root:
 
    ```
    uv run crewai-stock-price
-   uv run python -m tool_use.examples.crew_ai.main
+   uv run python -m tool_use.examples.crewai_ex.main
    ```
 
 The tickers to run are listed in `run()` in `main.py`: `MSFT`, `AMZN`, `NVDA`, plus `TSLA`, which isn't in the simulated prices, to show how the agent handles a tool error.

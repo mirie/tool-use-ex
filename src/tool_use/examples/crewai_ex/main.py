@@ -7,7 +7,7 @@ import os
 
 from dotenv import load_dotenv
 
-from tool_use.examples.crew_ai.crew import FinanceCrew
+from tool_use.examples.crewai_ex.crew import FinanceCrew
 
 logger = logging.getLogger(__name__)
 

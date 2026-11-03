@@ -7,12 +7,15 @@ requires-python = ">=3.14"
 dependencies = [
     "crewai>=1.15.34",
     "crewai-tools>=1.15.34",
+    "langchain>=1.4.8",
+    "langchain-openai>=1.7.3",
     "python-dotenv>=1.2.4",
 ]
 
 [project.scripts]
 tool-use = "tool_use:main"
-crewai-stock-price = "tool_use.examples.crew_ai.main:run"
+crewai-stock-price = "tool_use.examples.crewai_ex.main:run"
+langchain-tool-use = "tool_use.examples.langchain_ex.main:run"
 
 [build-system]
 requires = ["uv_build>=0.12.5,<0.13.0"]

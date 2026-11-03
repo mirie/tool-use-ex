@@ -2,7 +2,7 @@ from crewai import Agent, Crew, Process, Task
 from crewai.agents.agent_builder.base_agent import BaseAgent
 from crewai.project import CrewBase, agent, crew, task
 
-from tool_use.examples.crew_ai.tools.stock_price import get_stock_price
+from tool_use.examples.crewai_ex.tools.stock_price import get_stock_price
 
 
 @CrewBase
