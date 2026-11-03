@@ -1,0 +1,9 @@
+stock_analysis_task:
+  description: >
+    What is the stock price for {ticker}? Use the 'Lookup Stock Price' tool to find it.
+    If the ticker is not found, you must report that the price could not be retrieved.
+  expected_output: >
+    A single, clear sentence stating the price for {ticker}, e.g.
+    'The current stock price of {ticker} is $123.45.'
+    If the price is unavailable, state that clearly.
+  agent: financial_analyst
