@@ -21,8 +21,8 @@ PROVIDERS = {
     "openai": ("openai:gpt-5-mini", "OPENAI_API_KEY"),
     # Local open-weight model; needs `ollama serve` and `ollama pull qwen3:14b`
     "ollama": ("ollama:qwen3:14b", None),
-    # Hosted open-weight model (Kimi K2.6) on Fireworks
-    "fireworks": ("fireworks:accounts/fireworks/models/kimi-k2p6", "FIREWORKS_API_KEY"),
+    # Hosted open-weight model (Kimi K3) on Fireworks, serverless
+    "fireworks": ("fireworks:accounts/fireworks/models/kimi-k3", "FIREWORKS_API_KEY"),
 }
 
 
@@ -39,7 +39,6 @@ def search_information(query: str) -> str:
     simulated_results = {
         "weather in london": "The weather in London is currently cloudy with a temperature of 15°C.",
         "capital of france": "The capital of France is Paris.",
-        "population of earth": "The estimated population of Earth is around 8 billion people.",
         "tallest mountain": "Mount Everest is the tallest mountain above sea level.",
     }
 
@@ -138,7 +137,11 @@ def run() -> None:
     default_model, key_var = PROVIDERS[args.provider]
     if key_var and not os.getenv(key_var):
         raise SystemExit(f"Set {key_var} in your environment or .env file.")
-    model = f"{args.provider}:{args.model}" if args.model else default_model
+    model = default_model
+    if args.model:
+        # Accept the model with or without the "provider:" prefix
+        name = args.model.removeprefix(f"{args.provider}:")
+        model = f"{args.provider}:{name}"
 
     agent = build_agent(model)
 
@@ -149,6 +152,8 @@ def run() -> None:
         "Why do cats sleep so much?",
         "Hi! What can you help me with?",
         # Experiment 2: two-part question -> multiple (possibly parallel) tool calls?
+        # The tool knows London's weather but has no population entry, so the model
+        # must retry, give up, or fall back on its training data for the second part.
         "What's the weather in London and the population of Earth?",
         # Experiment 3: chaining -> look up the capital, then get the time there
         "What time is it right now in the capital of France?",

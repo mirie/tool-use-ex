@@ -4,7 +4,7 @@ Examples of the **Tool Use** pattern from *Agentic Design Patterns* by Antonio G
 
 | Example | Framework | Run |
 |---|---|---|
-| [LangChain](src/tool_use/examples/langchain_ex/README.md) | LangChain 1.x `create_agent`, with OpenAI, local Ollama (Qwen3) or Fireworks (Kimi K2.6) models | `uv run langchain-tool-use [--provider openai\|ollama\|fireworks]` |
+| [LangChain](src/tool_use/examples/langchain_ex/README.md) | LangChain 1.x `create_agent`, with OpenAI, local Ollama (Qwen3) or Fireworks (Kimi K3) models | `uv run langchain-tool-use [--provider openai\|ollama\|fireworks]` |
 | [CrewAI](src/tool_use/examples/crewai_ex/README.md) | CrewAI crew with YAML agents and tasks | `uv run crewai-tool-use` |
 
 ## Requirements
@@ -36,6 +36,6 @@ Examples of the **Tool Use** pattern from *Agentic Design Patterns* by Antonio G
 ```
 uv run langchain-tool-use                        # OpenAI gpt-5-mini
 uv run langchain-tool-use --provider ollama      # local qwen3:14b
-uv run langchain-tool-use --provider fireworks   # Kimi K2.6 on Fireworks
+uv run langchain-tool-use --provider fireworks   # Kimi K3 on Fireworks
 uv run crewai-tool-use                           # CrewAI example
 ```

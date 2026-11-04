@@ -14,7 +14,7 @@ Based on the tool use chapter of *Agentic Design Patterns* by Antonio Gulli.
 
 | Tool | What it returns |
 |---|---|
-| `search_information` | A simulated "verified knowledge base": London weather, capital of France, Earth's population, tallest mountain. Keyword match, so rephrased queries still hit. |
+| `search_information` | A simulated "verified knowledge base": London weather, capital of France, tallest mountain. Anything else returns a "no specific information found" message. Keyword match, so rephrased queries still hit. |
 | `get_current_time` | The current time in an IANA timezone such as `Europe/Paris`. |
 | `search_company_faq` | Private Acme Corp FAQ entries (PTO, remote work, expenses) the model can't know from training. |
 
@@ -28,7 +28,7 @@ The docstring of each tool is what the model reads when deciding whether to use 
 | What is the weather in London? | Live data: a tool is clearly needed |
 | Why do cats sleep so much? | General knowledge: the model may skip the tool |
 | Hi! What can you help me with? | No tool needed |
-| What's the weather in London and the population of Earth? | Two-part question: multiple, possibly parallel, tool calls |
+| What's the weather in London and the population of Earth? | Two-part question, but the tool has no population entry: does the model retry, give up, or answer from its own knowledge? |
 | What time is it right now in the capital of France? | Chaining: look up the capital, then the time (or skip the lookup) |
 | How many PTO days do Acme employees get? | Private data: the tool is the only source |
 
@@ -40,11 +40,11 @@ Pick a provider with `--provider`. Each one has a default model, and `--model` o
 |---|---|---|---|
 | `openai` (default) | `gpt-5-mini` | Frontier, hosted | `OPENAI_API_KEY` |
 | `ollama` | `qwen3:14b` | Open-weight, local | [Ollama](https://ollama.com) running, model pulled |
-| `fireworks` | `accounts/fireworks/models/kimi-k2p6` (Kimi K2.6) | Open-weight, hosted | `FIREWORKS_API_KEY` |
+| `fireworks` | `accounts/fireworks/models/kimi-k3` (Kimi K3) | Open-weight, hosted | `FIREWORKS_API_KEY` |
 
 `create_agent` receives a `"provider:model"` string and hands it to `init_chat_model`, which loads the matching integration (`langchain-openai`, `langchain-ollama` or `langchain-fireworks`).
 
-For local models, only use ones trained for tool calling (the **tools** tag on ollama.com). Kimi is too large to run locally (about 1T parameters), so it runs on Fireworks.
+For local models, only use ones trained for tool calling (the **tools** tag on ollama.com). Kimi models are far too large to run locally (K3 is about 2.8T parameters), so Kimi runs on Fireworks. Use a model marked **Serverless** on Fireworks (pay per token); others, such as Kimi K2.6, need a paid dedicated deployment.
 
 ## Running
 
@@ -67,7 +67,7 @@ From the `tool_use` project root:
    ```
    uv run langchain-tool-use                                  # gpt-5-mini
    uv run langchain-tool-use --provider ollama                # qwen3:14b, local
-   uv run langchain-tool-use --provider fireworks             # Kimi K2.6, hosted
+   uv run langchain-tool-use --provider fireworks             # Kimi K3, hosted
    uv run langchain-tool-use --provider ollama --model qwen3:30b-a3b
    uv run langchain-tool-use --help
    ```
@@ -77,4 +77,4 @@ From the `tool_use` project root:
 - **Tool call cap:** `ToolCallLimitMiddleware(run_limit=10)` allows at most 10 tool calls per question. Past that, further calls get an error and the model has to answer. This matters more for small models, which can loop.
 - **Retries are the model's choice:** LangChain doesn't retry a tool that returns "no result". The model decides whether to search again with a different query, and when to stop.
 - **Comparing models:** run the same questions with each provider and compare the traces. Things to watch: unnecessary tool calls, malformed arguments (such as a city name passed as a timezone), parallel vs sequential calls, and whether question 6 chains two tools.
-- **Kimi reasoning:** Kimi K2.6 reasons before answering. `ChatFireworks` keeps that reasoning (`reasoning_content`) across tool-call turns, as Kimi expects.
+- **Kimi reasoning:** Kimi reasons before answering. `ChatFireworks` keeps that reasoning (`reasoning_content`) across tool-call turns, as Kimi expects.
