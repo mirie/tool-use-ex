@@ -51,13 +51,16 @@ For local models, only use ones trained for tool calling (the **tools** tag on o
 From the `tool_use` project root:
 
 1. Copy `.env.example` to `.env` and fill in the keys for the providers you'll use.
-2. For Ollama, once:
+2. For `--provider ollama`, set up Ollama once:
 
    ```
-   brew install ollama
-   ollama serve            # or open the Ollama app
-   ollama pull qwen3:14b
+   brew install ollama     # or download the app from ollama.com
+   ollama serve            # local server on localhost:11434; the app starts it for you
+   ollama pull qwen3:14b   # ~9 GB download
+   ollama list             # confirm the model is installed
    ```
+
+   Ollama must be running whenever you use this provider. If you see a connection error, start `ollama serve`. If you see "model not found", run `ollama pull` for that model. No API key is needed.
 
 3. Run:
 
