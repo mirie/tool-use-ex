@@ -9,6 +9,7 @@ from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 from dotenv import load_dotenv
 from langchain.agents import create_agent
+from langchain.agents.middleware import ToolCallLimitMiddleware
 from langchain_core.tools import tool
 
 logger = logging.getLogger(__name__)
@@ -98,6 +99,9 @@ def build_agent():
             "question needs information from them; otherwise answer directly. "
             "Keep answers brief."
         ),
+        # Hard cap: at most 10 tool calls (across all tools) per question. Past the
+        # cap, further calls get an error message and the model must answer.
+        middleware=[ToolCallLimitMiddleware(run_limit=10)],
     )
 
 
