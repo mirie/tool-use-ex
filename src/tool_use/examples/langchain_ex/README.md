@@ -42,6 +42,28 @@ Pick a provider with `--provider`. Each one has a default model, and `--model` o
 | `ollama` | `qwen3:14b` | Open-weight, local | [Ollama](https://ollama.com) running, model pulled |
 | `fireworks` | `accounts/fireworks/models/kimi-k3` (Kimi K3) | Open-weight, hosted | `FIREWORKS_API_KEY` |
 
+### Models to compare
+
+Beyond the defaults, these are good for comparing reasoning and non-reasoning models. Short names work with `--provider ollama --model <name>`.
+
+| Model | How to run | Reasoning? | Download |
+|---|---|---|---|
+| Qwen3 14B | `--provider ollama` (default) | Hybrid: thinks by default, `--no-think` turns it off | 9.3 GB |
+| Qwen3 30B-A3B 2507 Instruct | `--provider ollama --model qwen3-instruct` | No | 18.6 GB |
+| Mistral Small 3.2 (24B) | `--provider ollama --model mistral-small` | No | 15.2 GB |
+| IBM Granite 4 small-h (32B MoE) | `--provider ollama --model granite` | No | 19.5 GB |
+| Llama 3.1 8B | `--provider ollama --model llama` | No | about 5 GB |
+| GPT-4.1 | `--provider openai --model gpt-4.1` | No | hosted |
+| DeepSeek V4.1 Flash (1017) | `--provider fireworks --model deepseek-flash` | No (none seen in a test call) | hosted |
+| MiniMax M3.1 Flash | `--provider fireworks --model minimax-flash` | No (none seen in a test call) | hosted |
+| gpt-oss-120b | `--provider fireworks --model gpt-oss` | Yes | hosted |
+| Nemotron Lightning 3.5 (30B-A3B) | `--provider fireworks --model nemotron` | Yes, brief | hosted |
+| Qwen3.8 Max | `--provider fireworks --model qwen-max` | Yes | hosted |
+| gpt-5-mini | `--provider openai` (default) | Yes | hosted |
+| Kimi K3 | `--provider fireworks` (default) | Yes | hosted |
+
+Fireworks only offers models from its serverless list (see `GET https://api.fireworks.ai/inference/v1/models` with your key); the "No" entries were checked with one tool-call test, so a model may still reason on harder questions. Pull the local ones first, e.g. `ollama pull mistral-small3.2:24b` (the exact tags are in `MODEL_ALIASES` in `main.py`). Llama 3.3 is left out because it only comes in 70B (42.5 GB), too big for a 48 GB Mac.
+
 `create_agent` receives a `"provider:model"` string and hands it to `init_chat_model`, which loads the matching integration (`langchain-openai`, `langchain-ollama` or `langchain-fireworks`).
 
 For local models, only use ones trained for tool calling (the **tools** tag on ollama.com). Kimi models are far too large to run locally (K3 is about 2.8T parameters), so Kimi runs on Fireworks. Use a model marked **Serverless** on Fireworks (pay per token); others, such as Kimi K2.6, need a paid dedicated deployment.
@@ -68,12 +90,16 @@ From the `tool_use` project root:
    uv run langchain-tool-use                                  # gpt-5-mini
    uv run langchain-tool-use --provider ollama                # qwen3:14b, local
    uv run langchain-tool-use --provider fireworks             # Kimi K3, hosted
-   uv run langchain-tool-use --provider ollama --model qwen3:30b-a3b
+   uv run langchain-tool-use --provider ollama --no-think     # Qwen3 without hidden reasoning, ~4x faster
+   uv run langchain-tool-use --provider ollama --model qwen3-instruct
+   uv run langchain-tool-use --provider ollama --model mistral-small
+   uv run langchain-tool-use --provider openai --model gpt-4.1
    uv run langchain-tool-use --help
    ```
 
 ## Notes
 
+- **Latency:** every question takes at least two model calls (ask for the tool, then answer). Qwen3 reasons before each reply, about 100 hidden tokens, which takes 8-9 s per call on an M4 Pro. `--no-think` (Ollama only) turns that off: about 2 s per call. Compare tool choices with and without it.
 - **Tool call cap:** `ToolCallLimitMiddleware(run_limit=10)` allows at most 10 tool calls per question. Past that, further calls get an error and the model has to answer. This matters more for small models, which can loop.
 - **Retries are the model's choice:** LangChain doesn't retry a tool that returns "no result". The model decides whether to search again with a different query, and when to stop.
 - **Comparing models:** run the same questions with each provider and compare the traces. Things to watch: unnecessary tool calls, malformed arguments (such as a city name passed as a timezone), parallel vs sequential calls, and whether question 6 chains two tools.

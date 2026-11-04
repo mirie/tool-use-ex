@@ -11,6 +11,7 @@ from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 from dotenv import load_dotenv
 from langchain.agents import create_agent
 from langchain.agents.middleware import ToolCallLimitMiddleware
+from langchain.chat_models import init_chat_model
 from langchain_core.tools import tool
 
 logger = logging.getLogger(__name__)
@@ -23,6 +24,25 @@ PROVIDERS = {
     "ollama": ("ollama:qwen3:14b", None),
     # Hosted open-weight model (Kimi K3) on Fireworks, serverless
     "fireworks": ("fireworks:accounts/fireworks/models/kimi-k3", "FIREWORKS_API_KEY"),
+}
+
+# Short names for --model, per provider, so you don't have to type long tags.
+# Ollama names need a prior `ollama pull <tag>`.
+MODEL_ALIASES = {
+    "ollama": {
+        "qwen3-instruct": "qwen3:30b-a3b-instruct-2507-q4_K_M",  # non-reasoning Qwen3
+        "mistral-small": "mistral-small3.2:24b",
+        "granite": "granite4:small-h",
+        "llama": "llama3.1:8b",
+    },
+    # Serverless on Fireworks
+    "fireworks": {
+        "deepseek-flash": "accounts/fireworks/models/deepseek-v4p1-flash-1017",  # no reasoning
+        "minimax-flash": "accounts/fireworks/models/minimax-m3p1-flash",  # no reasoning
+        "gpt-oss": "accounts/fireworks/models/gpt-oss-120b",
+        "nemotron": "accounts/fireworks/models/nemotron-lightning-3p5-30b-a3b",
+        "qwen-max": "accounts/fireworks/models/qwen3p8-max",
+    },
 }
 
 
@@ -98,9 +118,11 @@ def search_company_faq(query: str) -> str:
 
 
 # --- Create agent with its tools ---
-def build_agent(model: str):
+def build_agent(model: str, **model_kwargs):
+    # init_chat_model resolves "provider:model" and forwards extra kwargs (e.g.
+    # reasoning=False for Ollama) to the provider's chat model class.
     return create_agent(
-        model=model,
+        model=init_chat_model(model, **model_kwargs),
         tools=[search_information, get_current_time, search_company_faq],
         system_prompt=(
             "You are a helpful information assistant. Use your tools when a "
@@ -123,10 +145,20 @@ def run() -> None:
     )
     parser.add_argument(
         "--model",
-        help="Override the provider's default model, e.g. 'qwen3:30b-a3b' or "
-        "'accounts/fireworks/models/gpt-oss-120b'",
+        help="Override the provider's default model: a full name such as 'gpt-4.1' or "
+        "'accounts/fireworks/models/gpt-oss-120b', or a short name. ollama: "
+        + ", ".join(MODEL_ALIASES["ollama"])
+        + "; fireworks: "
+        + ", ".join(MODEL_ALIASES["fireworks"]),
+    )
+    parser.add_argument(
+        "--no-think",
+        action="store_true",
+        help="Ollama only: turn off Qwen3's hidden reasoning (about 4x faster per call)",
     )
     args = parser.parse_args()
+    if args.no_think and args.provider != "ollama":
+        parser.error("--no-think only applies to --provider ollama")
 
     logging.basicConfig(
         level=logging.INFO,
@@ -141,11 +173,15 @@ def run() -> None:
     if args.model:
         # Accept the model with or without the "provider:" prefix
         name = args.model.removeprefix(f"{args.provider}:")
+        name = MODEL_ALIASES.get(args.provider, {}).get(name, name)
         model = f"{args.provider}:{name}"
 
-    agent = build_agent(model)
+    model_kwargs = {"reasoning": False} if args.no_think else {}
+    agent = build_agent(model, **model_kwargs)
 
-    logger.info("LangChain example starting with model %s", model)
+    logger.info(
+        "LangChain example starting with model %s %s", model, model_kwargs or ""
+    )
     questions = [
         "What is the capital of France?",
         "What is the weather in London?",
