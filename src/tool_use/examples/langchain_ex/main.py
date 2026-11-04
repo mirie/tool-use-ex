@@ -2,6 +2,7 @@
 Source: Agentic Design Patterns by Antonio Gulli
 """
 
+import argparse
 import logging
 import os
 from datetime import datetime
@@ -14,7 +15,15 @@ from langchain_core.tools import tool
 
 logger = logging.getLogger(__name__)
 
-MODEL = "gpt-5-mini"
+# Provider -> (default model in "provider:model" form, required API key env var).
+# create_agent passes the string to init_chat_model, which picks the integration.
+PROVIDERS = {
+    "openai": ("openai:gpt-5-mini", "OPENAI_API_KEY"),
+    # Local open-weight model; needs `ollama serve` and `ollama pull qwen3:14b`
+    "ollama": ("ollama:qwen3:14b", None),
+    # Hosted open-weight model (Kimi K2.6) on Fireworks
+    "fireworks": ("fireworks:accounts/fireworks/models/kimi-k2p6", "FIREWORKS_API_KEY"),
+}
 
 
 @tool
@@ -90,9 +99,9 @@ def search_company_faq(query: str) -> str:
 
 
 # --- Create agent with its tools ---
-def build_agent():
+def build_agent(model: str):
     return create_agent(
-        model=MODEL,
+        model=model,
         tools=[search_information, get_current_time, search_company_faq],
         system_prompt=(
             "You are a helpful information assistant. Use your tools when a "
@@ -106,18 +115,34 @@ def build_agent():
 
 
 def run() -> None:
+    parser = argparse.ArgumentParser(description="LangChain tool use example")
+    parser.add_argument(
+        "--provider",
+        choices=PROVIDERS,
+        default="openai",
+        help="Model provider (default: openai)",
+    )
+    parser.add_argument(
+        "--model",
+        help="Override the provider's default model, e.g. 'qwen3:30b-a3b' or "
+        "'accounts/fireworks/models/gpt-oss-120b'",
+    )
+    args = parser.parse_args()
+
     logging.basicConfig(
         level=logging.INFO,
         format="%(asctime)s %(levelname)s %(name)s: %(message)s",
     )
 
     load_dotenv()
-    if not os.getenv("OPENAI_API_KEY"):
-        raise SystemExit("Set OPENAI_API_KEY in your environment or .env file.")
+    default_model, key_var = PROVIDERS[args.provider]
+    if key_var and not os.getenv(key_var):
+        raise SystemExit(f"Set {key_var} in your environment or .env file.")
+    model = f"{args.provider}:{args.model}" if args.model else default_model
 
-    agent = build_agent()
+    agent = build_agent(model)
 
-    logger.info("LangChain example starting")
+    logger.info("LangChain example starting with model %s", model)
     questions = [
         "What is the capital of France?",
         "What is the weather in London?",
