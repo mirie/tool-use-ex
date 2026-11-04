@@ -1,5 +1,5 @@
 """CrewAI tool exploration example
-   Source: Agentic Design Patterns by Antonio Gulli
+Source: Agentic Design Patterns by Antonio Gulli
 """
 
 import logging
@@ -22,13 +22,26 @@ def run() -> None:
     if not os.getenv("OPENAI_API_KEY"):
         raise SystemExit("Set OPENAI_API_KEY in your environment or .env file.")
 
-    tickers = ["MSFT", "AMZN", "NVDA", "TSLA"]  # TSLA is not in the simulated prices
-    for ticker in tickers:
-        inputs = {"ticker": ticker}
+    questions = [
+        # One tool, one call
+        "What is the stock price of MSFT?",
+        # Tool error: TSLA is not in the simulated prices
+        "What is the stock price of TSLA?",
+        # Two-part question: multiple calls to the same tool
+        "Compare the stock prices of NVDA and AMZN.",
+        # Picking a different tool: needs the current time, not a price
+        "Is the New York Stock Exchange open right now?",
+        # Private data + chaining: holdings -> price -> multiply
+        "How much is my NVDA position worth?",
+        # No tool needed: the agent should answer directly
+        "What is a stock ticker symbol?",
+    ]
+    for question in questions:
+        inputs = {"question": question}
         logger.info("Starting crew with inputs %s", inputs)
-        # Build a fresh crew per run so no state carries over between tickers
+        # Build a fresh crew per run so no state carries over between questions
         result = FinanceCrew().crew().kickoff(inputs=inputs)
-        logger.info("Crew finished for %s. Final result: %s", ticker, result)
+        logger.info("Crew finished. Q: %s | A: %s", question, result)
 
 
 if __name__ == "__main__":

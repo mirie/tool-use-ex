@@ -14,7 +14,7 @@ dependencies = [
 
 [project.scripts]
 tool-use = "tool_use:main"
-crewai-stock-price = "tool_use.examples.crewai_ex.main:run"
+crewai-tool-use = "tool_use.examples.crewai_ex.main:run"
 langchain-tool-use = "tool_use.examples.langchain_ex.main:run"
 
 [build-system]
